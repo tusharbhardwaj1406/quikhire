@@ -6,7 +6,11 @@ function req(name: string): string {
 }
 
 export const env = {
-  get siteUrl() { return (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, ''); },
+  /** Public address of the site. On Vercel it is picked up automatically, so no setting is needed until a custom domain is added. */
+  get siteUrl() {
+    const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined;
+    return (process.env.NEXT_PUBLIC_SITE_URL ?? vercel ?? 'http://localhost:3000').replace(/\/$/, '');
+  },
   get supabaseUrl() { return req('NEXT_PUBLIC_SUPABASE_URL'); },
   get supabaseKey() {
     return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? req('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
