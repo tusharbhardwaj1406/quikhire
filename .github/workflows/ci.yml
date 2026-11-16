@@ -1,0 +1,22 @@
+name: CI
+on: { push: { branches: [main, develop] }, pull_request: {} }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_HOST_AUTH_METHOD: trust }
+        ports: ['54322:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: ./scripts/db-reset-local.sh zeronotice_test     # migrations must apply cleanly to an empty database
+      - run: pnpm test                                        # database security, billing lifecycle, unit tests
+      - run: ./scripts/e2e-local.sh                           # production build + browser tests
