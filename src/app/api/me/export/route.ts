@@ -25,5 +25,5 @@ export async function GET() {
     notifications: await tx`select type, title, body, created_at, read_at from notifications where user_id = ${user.id}`,
   }));
   return new NextResponse(JSON.stringify(data, (k, v) => (k === 'search_tsv' ? undefined : v), 2), {
-    headers: { 'Content-Type': 'application/json', 'Content-Disposition': 'attachment; filename="zeronotice-my-data.json"', 'Cache-Control': 'private, no-store' } });
+    headers: { 'Content-Type': 'application/json', 'Content-Disposition': 'attachment; filename="quikhire-my-data.json"', 'Cache-Control': 'private, no-store' } });
 }

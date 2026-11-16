@@ -4,14 +4,14 @@ import { Card } from '@/components/ui';
 import { homeFor, requireUser } from '@/lib/auth';
 import { chooseRoleAction } from '../../actions';
 
-export const metadata = { title: 'How will you use ZeroNotice?', robots: { index: false } };
+export const metadata = { title: 'How will you use QuikHire?', robots: { index: false } };
 /** Shown once after a social sign-in, where no role was chosen on a form. */
 export default async function ChooseRole() {
   const user = await requireUser();
   if (user.role) redirect(homeFor(user.role));
   return (
     <Card className="w-full max-w-xl">
-      <h1 className="text-2xl font-bold">How will you use ZeroNotice?</h1>
+      <h1 className="text-2xl font-bold">How will you use QuikHire?</h1>
       <p className="mt-1 text-sm text-slate-600">By continuing you agree to the Terms of Service and Privacy Policy. This choice cannot be changed later.</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <form action={chooseRoleAction} className="rounded-xl border border-slate-200 p-5"><input type="hidden" name="role" value="candidate" />

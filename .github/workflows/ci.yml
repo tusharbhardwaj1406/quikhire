@@ -17,6 +17,6 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: ./scripts/db-reset-local.sh zeronotice_test     # migrations must apply cleanly to an empty database
+      - run: ./scripts/db-reset-local.sh quikhire_test     # migrations must apply cleanly to an empty database
       - run: pnpm test                                        # database security, billing lifecycle, unit tests
       - run: ./scripts/e2e-local.sh                           # production build + browser tests

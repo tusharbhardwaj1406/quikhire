@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ActionForm, TaxonomyPicker } from '@/components/forms';
 import { Card, Check, Field, Select } from '@/components/ui';
 import { AVAILABILITY, EMPLOYMENT_STATUS } from '@/lib/brand';
-import { getIndustries } from '@/lib/data';
+import { getIndustries, getRegions } from '@/lib/data';
 import { SocialButtons } from '@/components/social';
 import { signupCandidateAction } from '../../actions';
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: 'Create your candidate profile', desc
 export const revalidate = 600;
 
 export default async function SignupCandidate() {
-  const industries = await getIndustries().catch(() => []);
+  const [industries, regions] = await Promise.all([getIndustries().catch(() => []), getRegions().catch(() => [])]);
   return (
     <Card className="w-full max-w-2xl">
       <h1 className="text-2xl font-bold">Get discovered by employers who need you now</h1>
@@ -23,7 +23,8 @@ export default async function SignupCandidate() {
           <Field label="Mobile number" hint="Hidden from employers unless you choose to share it."><input name="phone" type="tel" autoComplete="tel" required className="input" placeholder="98XXXXXXXX" /></Field>
           <Field label="Email"><input name="email" type="email" autoComplete="email" required className="input" /></Field>
           <Field label="Password" hint="At least 10 characters."><input name="password" type="password" autoComplete="new-password" minLength={10} required className="input" /></Field>
-          <Field label="Current city"><input name="city" autoComplete="address-level2" required className="input" /></Field>
+          <Field label="Region"><Select name="region_id" required placeholder="Select your region" options={[...regions.map((r) => ({ value: r.id, label: r.name })), { value: 'other', label: 'Elsewhere in India' }]} /></Field>
+          <Field label="City or locality"><input name="city" autoComplete="address-level2" required className="input" /></Field>
           <Field label="Total experience (years)"><input name="total_exp_years" type="number" min={0} max={60} step={0.5} required className="input" /></Field>
         </div>
         <TaxonomyPicker industries={industries} required />

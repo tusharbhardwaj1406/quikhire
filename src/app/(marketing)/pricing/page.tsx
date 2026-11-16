@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { LinkButton } from '@/components/ui';
 import { inr } from '@/lib/brand';
-import { getPlans, type Plan } from '@/lib/data';
+import { getLaunch, getPlans, type Plan } from '@/lib/data';
+import { dateIN } from '@/lib/brand';
 
 export const revalidate = 600;
 export const metadata: Metadata = { title: 'Pricing', description: 'Two simple monthly plans. No hidden charges. Cancel anytime.', alternates: { canonical: '/pricing' } };
@@ -15,6 +16,7 @@ const FEATURES = {
 
 export default async function Pricing() {
   const plans = await getPlans().catch(() => [] as Plan[]);
+  const launch = await getLaunch().catch(() => null);
   const card = (audience: 'candidate' | 'employer', title: string, fallback: number, href: string) => {
     const p = plans.find((x) => x.audience === audience);
     return (
@@ -31,6 +33,7 @@ export default async function Pricing() {
     <div className="container-page py-16">
       <h1 className="text-center text-4xl font-extrabold">Simple, honest pricing</h1>
       <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">Two plans. No setup fees, no hidden charges, cancel whenever you like.</p>
+      {launch?.free && <p className="mx-auto mt-6 max-w-xl rounded-xl bg-accent-50 px-4 py-3 text-center text-sm text-accent-700 ring-1 ring-accent-100"><strong>Launch offer:</strong> candidates are listed free {launch.endsAt ? `until ${dateIN(launch.endsAt)}` : `for the first ${launch.days} days after launch`}. No card needed.</p>}
       <div className="mx-auto mt-10 grid max-w-4xl gap-6 md:grid-cols-2">
         {card('candidate', 'Candidates', 14900, '/signup/candidate')}
         {card('employer', 'Employers & recruiters', 149900, '/signup/employer')}

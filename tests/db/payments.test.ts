@@ -1,11 +1,12 @@
 import { createHmac } from 'node:crypto';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { db } from '@/lib/db';
 import { processPaymentEvent } from '@/lib/payments';
 import { RazorpayProvider } from '@/lib/payments/razorpay';
 import { chargeAmount, gstSplit } from '@/lib/payments/types';
-import { completeCandidate, createUser, isListed } from './helpers';
+import { completeCandidate, createUser, isListed, endLaunch } from './helpers';
 
+beforeAll(async () => { await endLaunch(); });
 afterAll(() => db().end());
 const rzp = new RazorpayProvider('rzp_test_key', 'key_secret', 'whsec');
 const sign = (body: string) => createHmac('sha256', 'whsec').update(body).digest('hex');
@@ -51,7 +52,7 @@ describe('subscription lifecycle from verified events', () => {
     expect(await processPaymentEvent(ev)).toBe('duplicate');                    // gateway retries are harmless
     const pays = await db()`select invoice_number, tax_paise from payments where provider_payment_id = ${'pay_' + subId}`;
     expect(pays).toHaveLength(1);
-    expect(pays[0].invoice_number).toMatch(/^ZN-\d{4}-\d{6}$/);
+    expect(pays[0].invoice_number).toMatch(/^QH-\d{4}-\d{6}$/);
     expect(pays[0].tax_paise).toBe(2273);
     expect(await isListed(u.id)).toBe(true);
     expect((await db()`select count(*)::int n from notifications where user_id = ${u.id} and type = 'payment.received'`)[0].n).toBe(1);

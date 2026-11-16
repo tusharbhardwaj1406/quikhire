@@ -1,28 +1,31 @@
-# ZeroNotice — progress tracker
+# QuikHire — progress tracker
 
-Last updated: 16 Nov 2026 · Build v0.1.0 · **Not deployed. No real users, payments or data.**
+Last updated: 16 Nov 2026 · Build v0.2.0 · **Not deployed. No real users or payments.**
+(Renamed from ZeroNotice on 16 Nov 2026.)
 
 ## Phase status
 | Phase | Status |
 |---|---|
 | 1. Discovery and architecture | Done (`docs/ARCHITECTURE.md`, `docs/LAUNCH-READINESS.md`) |
-| 2. UI/UX | Done for v0.1: all three portals, public site, design system, mobile layouts |
-| 3. Backend and database | Done for v0.1: schema, RLS, taxonomy, profiles, resumes, search, permissions |
+| 2. UI/UX | Done for v0.2: three portals, public site, seven city hubs, walk-ins, mobile layouts |
+| 3. Backend and database | Done for v0.2: schema, RLS, taxonomy, regions, profiles, resumes, search, walk-ins |
 | 4. Payments and subscriptions | Code complete and unit-tested; **not yet run against Razorpay** |
 | 5. Advanced functionality | Partly done (see below) |
-| 6. Security and testing | 26 database/unit + 8 browser tests passing; staging tests and security review outstanding |
+| 6. Security and testing | 31 database/unit + 8 browser tests passing; staging tests and security review outstanding |
 | 7. Production deployment | Not started — blocked on owner accounts |
 
-## Completed and tested
-- Public site: homepage with real (or honestly absent) statistics, pricing from the database, 30 industry landing pages, FAQ with structured data, sitemap, robots, legal drafts
-- Auth: candidate and employer sign-up, password login, role-based routing, sign-out, role isolation, signed-out redirects
-- Candidate portal: dashboard (completeness, views, enquiries, downloads, checklist, activity), profile editor (basics, industry/specialisations, skills type-ahead, availability, salary, history, certifications), resume upload/list/primary/delete, enquiry inbox with accept/decline/report, privacy controls, pause, data export, deletion request
-- Availability engine: joining window, one-click reconfirm, automatic "confirmation pending" after N days, self-declared vs verified badge
-- Employer portal: company registration, verification states, search with 20+ filters, AND/OR skill matching, keyword operators, sort, pagination, saved searches, natural-language query → editable filters, masked candidate cards and profiles, shortlist/pipeline with private notes, enquiries and interview requests, hiring requirements
-- Admin portal: live metrics (MRR, churn, by industry/city), employer verification queue, user search/suspend/reinstate, availability verification, duplicate-phone finder, deletion processing, complimentary access, taxonomy add/rename/hide/merge, pricing and GST mode, platform rules, payments/subscriptions/webhook log, refunds, reports, audit log
-- Billing core: gateway-neutral interface, Razorpay implementation, signature checks, idempotent webhook processing, invoices with GST split, grace period, cancel-at-period-end
-- Notifications: in-app for all key events; email delivery via Resend when configured
-- CI workflow, migrations, documentation
+## Added in v0.2 (16 Nov 2026)
+- **Name**: QuikHire throughout (site, emails, invoices `QH-YYYY-000001`, candidate codes `QH-XXXXXXX`).
+- **Seven regions**: Mumbai, Pune, Delhi NCR, Bengaluru, Kolkata, Chennai, Hyderabad. Each has a public hub at `/in/<city>`. Candidates choose a region at sign-up (or it is derived from their city, e.g. Gurugram → Delhi NCR). Employers can filter search by region, and "Delhi NCR" in a plain-English search maps to the region. More regions can be added in the database.
+- **Free launch period**: candidate listing is free until an admin starts the launch clock, and for 60 days after that (Admin → Pricing & settings → Launch offer). After day 60 a nightly job removes unpaid listings. Employers still pay; a switch extends the offer to verified employers if wanted.
+- **Walk-ins**: every city hub shows walk-in interviews for the next 7 days with role, company, dates, timing, venue, eligibility, salary, what to carry and a link to the source. `/walk-ins` gives the all-city view. Three ways in:
+  1. verified employers post their own (free, badged "Verified employer");
+  2. admin adds one by hand;
+  3. admin imports a researched JSON batch (must cite a source link; shown as "From the web · not verified" until confirmed; duplicates skipped).
+- **First researched batch**: `supabase/seed/walkins-2026-11-16.json`, 12 walk-ins for 16–23 Nov 2026 (Chennai 4, Delhi NCR 3, Hyderabad 2, Pune 1, Bengaluru 1, Kolkata 1, Mumbai 0).
+
+## Completed and tested (v0.1 + v0.2)
+- Public site, sign-up/login, candidate portal, availability engine, employer portal, admin portal, billing core, notifications, CI — as listed in `docs/TESTING.md`.
 
 ## Built but not yet verified against the real service
 | Item | What is needed |
@@ -34,40 +37,41 @@ Last updated: 16 Nov 2026 · Build v0.1.0 · **Not deployed. No real users, paym
 | Email sending | Resend account + verified domain |
 | Daily cron | Vercel deployment |
 
-## Not built yet (next sessions, in priority order)
+## Walk-ins: what is and is not automated
+- The site does **not** crawl job boards. Naukri, Indeed and similar sites prohibit automated copying in their terms, and listings copied blindly would include scams and stale drives.
+- The first batch was researched by hand from three public pages; details that the sources contradicted are flagged in the listing text, and one airline listing was dropped because the official page did not confirm the dates.
+- The batch goes stale after 23 Nov 2026. Keeping the section fresh needs one of: (a) a daily research-and-import routine (can be scheduled once the site is deployed), (b) a licensed jobs feed, or (c) employers posting directly — which is the only source the site can mark as verified.
+
+## Not built yet (priority order)
 1. Staging deployment and the checks in the table above
-2. Resume parsing and automatic skill extraction (with user correction)
-3. Saved-search alerts ("matching candidate registered") and pre-expiry availability/subscription reminders
-4. Interview scheduling, message threads beyond enquiry + reply, blocking an employer
-5. Mobile OTP (needs a DLT-registered SMS provider), CAPTCHA (Turnstile), stricter rate limits, Content-Security-Policy, malware scanning of uploads
-6. Optional supporting documents for availability verification; recruiter feedback on availability
-7. Admin: editable homepage/FAQ content, email templates, SEO settings, feature flags, multiple admin roles
-8. AI features beyond rule-based search: resume-to-requirement matching with explanations, duplicate detection
-9. Analytics (privacy-friendly), error monitoring (Sentry), load test, accessibility audit, penetration test
-10. Multi-recruiter teams per company; PDF invoices; placement confirmation flow
+2. Daily walk-in refresh job; report button on walk-ins; automatic clean-up of expired walk-ins
+3. Resume parsing and automatic skill extraction
+4. Saved-search alerts; reminders before availability, subscription or free-launch expiry
+5. Interview scheduling, message threads, blocking an employer
+6. Mobile OTP, CAPTCHA, stricter rate limits, Content-Security-Policy, malware scanning
+7. Admin: region editor, editable homepage/FAQ, email templates, feature flags, multiple admin roles
+8. AI matching with explanations, duplicate detection
+9. Analytics, error monitoring, load test, accessibility audit, penetration test
+10. Multi-recruiter teams; PDF invoices; placement confirmation flow
 
 ## Known issues and caveats
-- Browser tests use a test-only stand-in for Supabase Auth (`tests/support/auth-stub.mjs`); see `docs/TESTING.md`.
-- Resume uploads are capped at 4 MB because they pass through a serverless function. Larger files need direct-to-storage signed uploads.
-- Saving skills recomputes the search index once per skill; fine now, batch it before very large imports.
-- After an admin verifies an employer the card leaves the Pending tab without a confirmation banner.
-- A price change applies to new checkouts only; existing mandates keep their amount (gateway behaviour).
+- Browser tests use a test-only stand-in for Supabase Auth; see `docs/TESTING.md`.
+- Resume uploads are capped at 4 MB.
+- The launch clock must be started by an admin on go-live day; until then listing stays free.
 - `src/lib/brand.ts` holds placeholder support/grievance emails; invoices show a placeholder for seller legal name and GSTIN.
 - Legal pages are drafts and say so on the page.
-
-## Deployment status
-Local only. Source is committed to a local git repository on `main` and exported as an archive. **Not yet on GitHub**: this session's GitHub token could list repositories (only `tush_SSE` exists) but could not create one.
+- "QuikHire" sits close to existing recruitment brands (QuikHiring, QuickHire, QuikrJobs, QwikHire). See `docs/LAUNCH-READINESS.md` §1.
 
 ## Owner's pending actions
 | # | Action | Why |
 |---|---|---|
-| 1 | **Decide on the name.** An existing Indian platform already uses "ZeroNotice" for the same idea (see `docs/LAUNCH-READINESS.md` §1). | Legal/brand risk; affects domain, trademark, design |
-| 2 | Create an empty private GitHub repo `zeronotice` and grant this workspace access to it | So the code can be pushed and CI can run |
-| 3 | Create a Supabase project (Mumbai) for staging; share URL + keys through environment variables, not chat | Unblocks real auth, storage and staging tests |
-| 4 | Create a Vercel account/team and import the repo | Hosting |
-| 5 | Choose the business structure with a CA/CS; register; get PAN/bank/GST as advised | Required for Razorpay KYC and invoices |
-| 6 | Start Razorpay onboarding; request Subscriptions + UPI AutoPay; ask Cashfree for a quote on the ₹1,499 plan | Payments |
-| 7 | Create OAuth developer apps (Google first; Facebook, LinkedIn, Yahoo as wanted) | Social sign-in |
-| 8 | Engage a lawyer for Terms, Privacy, Refund, Verification and Grievance documents | Must not launch on drafts |
-| 9 | Decide: should candidate listing be free during the launch period? (Admin → Pricing & settings) | Business model; a two-sided marketplace needs candidates before employers will pay |
+| 1 | Trademark and domain check for "QuikHire" | Several similar recruitment names exist in India |
+| 2 | Create a Supabase project (Mumbai) for staging; add keys as environment variables | Unblocks real auth, storage and staging tests |
+| 3 | Create a Vercel account/team and import the GitHub repo | Hosting |
+| 4 | Choose the business structure with a CA/CS; register; PAN/bank/GST | Required for Razorpay KYC and invoices |
+| 5 | Start Razorpay onboarding (Subscriptions + UPI AutoPay); ask Cashfree for a quote on the ₹1,499 plan | Payments |
+| 6 | Create OAuth developer apps (Google first) | Social sign-in |
+| 7 | Engage a lawyer for Terms, Privacy, Refund, Verification and Grievance documents | Must not launch on drafts |
+| 8 | Decide whether employers are also free for the 60 days (currently: no) | One switch in Admin |
+| 9 | Decide how walk-ins stay fresh after 23 Nov (daily research routine, licensed feed, or employer-posted only) | Section empties otherwise |
 | 10 | Provide support and grievance email addresses | Shown on site and in policies |

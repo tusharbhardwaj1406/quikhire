@@ -1,6 +1,6 @@
 /** Single source of truth for naming. Change here if the brand changes before launch. */
 export const brand = {
-  name: 'ZeroNotice',
+  name: 'QuikHire',
   tagline: 'Talent Without Waiting.',
   altTagline: 'Available Today. Valuable Tomorrow.',
   description: 'India’s marketplace for professionals who can join immediately, and the employers who need them now.',

@@ -1,4 +1,4 @@
-# ZeroNotice
+# QuikHire
 
 **Talent Without Waiting.** A subscription marketplace for India that connects professionals who can join immediately (or within 30 days) with verified employers and recruitment agencies.
 
@@ -32,7 +32,7 @@ Create the first administrator (once): sign up normally, then run in the Supabas
 
 ```bash
 pnpm db:reset:local   # fresh local Postgres 16 on :54322 with all migrations
-pnpm test             # 26 database-security, billing and unit tests
+pnpm test             # 31 database-security, billing, regions/walk-ins and unit tests
 ./scripts/e2e-local.sh  # production build + 8 browser journeys
 ```
 Details and the latest results: [`docs/TESTING.md`](docs/TESTING.md).
@@ -41,7 +41,7 @@ Details and the latest results: [`docs/TESTING.md`](docs/TESTING.md).
 
 ```
 supabase/migrations/   schema, RLS policies, functions, taxonomy seed (source of truth for the database)
-src/app/(marketing)/   home, pricing, industry landing pages, legal drafts
+src/app/(marketing)/   home, pricing, city hubs (/in/<city>), walk-ins, industry pages, legal drafts
 src/app/(auth)/        sign-up, login, OTP, password reset, role selection
 src/app/candidate/     candidate portal        src/app/employer/   employer portal
 src/app/admin/         super-admin portal      src/app/api/        webhooks, billing, cron, downloads, export

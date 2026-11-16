@@ -120,3 +120,26 @@ export async function closeRequirement(fd: FormData): Promise<void> {
   await asUser(user.id, (tx) => tx`update requirements set status = 'closed' where id = ${z.string().uuid().parse(fd.get('id'))}`).catch(() => {});
   revalidatePath('/employer');
 }
+
+// ───────── walk-ins (verified employers post free of charge) ─────────
+export async function postWalkin(_: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await requireRole('employer');
+  try {
+    const { walkinSchema, resolveRegion, walkinRow } = await import('@/lib/walkins');
+    const ctx = await getEmployerContext(user.id);
+    if (ctx.employer?.verification_status !== 'verified') return { error: 'Only verified employers can post walk-ins.' };
+    const w = walkinSchema.parse({ ...Object.fromEntries(fd), company_name: ctx.employer.name });   // always the verified company's own name
+    const regions = await asUser(user.id, (tx) => tx`select id, slug, name, city_aliases from regions where is_active`);
+    const regionId = resolveRegion(w.region, regions as never);
+    if (!regionId) return { error: 'Choose a region.' };
+    await asUser(user.id, (tx) => tx`insert into walkins ${tx({ ...walkinRow(w, regionId), source_type: 'employer', verified: true, employer_id: ctx.employer!.id, created_by: user.id } as never)}`);
+  } catch (e) { return err(e); }
+  revalidatePath('/employer/walk-ins'); revalidatePath('/walk-ins'); revalidatePath('/in/[slug]', 'page');
+  return { ok: true, message: 'Published. It appears on the city page straight away.' };
+}
+
+export async function deleteWalkin(fd: FormData): Promise<void> {
+  const user = await requireRole('employer');
+  await asUser(user.id, (tx) => tx`delete from walkins where id = ${z.string().uuid().parse(fd.get('id'))}`);
+  revalidatePath('/employer/walk-ins'); revalidatePath('/walk-ins');
+}

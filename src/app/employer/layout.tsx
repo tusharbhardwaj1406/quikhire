@@ -7,7 +7,7 @@ import { getEmployerContext } from '@/lib/employer';
 
 export const metadata = { title: 'Employer', robots: { index: false, follow: false } };
 const NAV = [
-  { href: '/employer', label: 'Dashboard' }, { href: '/employer/search', label: 'Search candidates' }, { href: '/employer/pipeline', label: 'Pipeline' },
+  { href: '/employer', label: 'Dashboard' }, { href: '/employer/search', label: 'Search candidates' }, { href: '/employer/pipeline', label: 'Pipeline' }, { href: '/employer/walk-ins', label: 'Walk-ins' },
   { href: '/employer/company', label: 'Company' }, { href: '/employer/billing', label: 'Subscription' },
 ];
 

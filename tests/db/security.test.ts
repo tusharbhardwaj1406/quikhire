@@ -1,7 +1,8 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { asAnon, asUser, db } from '@/lib/db';
-import { completeCandidate, createEmployer, createUser, grantSubscription, isListed, listedCandidate, search } from './helpers';
+import { completeCandidate, createEmployer, createUser, grantSubscription, isListed, listedCandidate, search, endLaunch } from './helpers';
 
+beforeAll(async () => { await endLaunch(); });
 afterAll(() => db().end());
 
 describe('identity', () => {
@@ -117,7 +118,7 @@ describe('search + consent masking', () => {
     const hit = rows.find((r) => r.candidate_id === c.id)!;
     expect(hit).toBeTruthy();
     expect(rows.find((r) => r.candidate_id === junior.id)).toBeUndefined();
-    expect(hit.display_name).toMatch(/^Candidate ZN-/);
+    expect(hit.display_name).toMatch(/^Candidate QH-/);
     expect(hit.expected_ctc).toBeNull();
     expect(hit.top_skills).toContain('MIDAS Civil');
     // salary filters must not reveal hidden salaries by inference
@@ -125,7 +126,7 @@ describe('search + consent masking', () => {
     await asUser(c.id, (tx) => tx`update candidates set show_salary = true, show_full_name = true where user_id = ${c.id}`);
     const again = (await search(e.id, { expected_ctc_max: 99999999 })).find((r) => r.candidate_id === c.id)!;
     expect(Number(again.expected_ctc)).toBe(3000000);
-    expect(again.display_name).not.toMatch(/^Candidate ZN-/);
+    expect(again.display_name).not.toMatch(/^Candidate QH-/);
   });
   it('releases contact details only after the candidate accepts an enquiry, and logs views', async () => {
     const c = await listedCandidate();

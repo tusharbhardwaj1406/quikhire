@@ -32,7 +32,7 @@ export async function saveBasics(_: ActionState, fd: FormData) {
       full_name: z.string().trim().min(2, 'Enter your full name.').max(100),
       phone: str(20), current_designation: str(120), summary: str(2000),
       total_exp_years: num(0, 60), relevant_exp_years: num(0, 60),
-      city: str(80), state: str(80), linkedin_url: url, portfolio_url: url, website_url: url,
+      city: str(80), state: str(80), region_id: num(1, 100000), linkedin_url: url, portfolio_url: url, website_url: url,
       highest_qualification: str(120), university: str(160), graduation_year: num(1950, 2100),
     }).parse(Object.fromEntries(fd));
     const { full_name, phone, ...c } = d;

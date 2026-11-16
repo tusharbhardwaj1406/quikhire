@@ -9,14 +9,15 @@ pnpm test                  # vitest: tests/db + tests/unit
 ```
 The same steps run in GitHub Actions (`.github/workflows/ci.yml`).
 
-## Test report — 16 Nov 2026 (build v0.1.0)
+## Test report — 16 Nov 2026 (build v0.2.0)
 | Suite | Result |
 |---|---|
 | TypeScript (`tsc --noEmit`, strict) | pass |
-| Migrations apply to an empty Postgres 16 | pass (4 files) |
-| Production build (`next build`) | pass, 48 routes |
+| Migrations apply to an empty Postgres 16 | pass (5 files) |
+| Production build (`next build`) | pass |
 | Database security + lifecycle (`tests/db/security.test.ts`) | 17 / 17 |
 | Billing (`tests/db/payments.test.ts`) | 5 / 5 |
+| Regions, launch offer, walk-ins (`tests/db/regions-walkins.test.ts`) | 5 / 5 |
 | Unit (`tests/unit/search.test.ts`) | 4 / 4 |
 | Browser end-to-end (`tests/e2e/marketplace.spec.ts`) | 8 / 8 |
 
@@ -25,6 +26,9 @@ Sign-up creates profile + consent records · `admin` cannot be obtained via sign
 
 ### What the billing tests prove
 Webhook and checkout signatures (valid, tampered, empty) · GST maths for inclusive/exclusive pricing · a mandate alone grants nothing; a `charged` event grants access exactly once (duplicate delivery is a no-op) with an invoice number · cancellation keeps access to period end with no grace; `halted` removes it · refunds recorded · unknown subscriptions ignored safely.
+
+### What the v0.2 tests add
+Free listing before launch and through day 59, removed by the nightly job after day 60 · employers stay paid unless the admin extends the offer, and never bypass verification · city → region mapping and region search filter · only verified employers can publish walk-ins, only as themselves · web-sourced walk-ins must cite a source · hidden walk-ins disappear from public view · the researched batch validates entry by entry. Browser: seven cities on the homepage, launch offer shown, admin import (12 added, re-import skips 12), employer-posted walk-in badged verified, imported ones badged unverified with a source link, Mumbai honestly empty.
 
 ### What the browser tests prove (real UI, production build)
 Honest pre-launch homepage, live pricing, robots rules, cron/webhook endpoints reject unsigned calls → portals redirect signed-out visitors → candidate sign-up with dependent industry/specialisation picker → profile sections save, skill type-ahead and new-skill creation → resume upload, disguised file rejected → no fake payment path → role isolation → employer sign-up, company registration, locked search → admin verifies, grants pilot access, audit log entries → natural-language query becomes editable filters → masked card (name, salary) → filters exclude correctly → enquiry sent → candidate accepts → employer now sees name + email → data export works → no horizontal overflow at 375 px.

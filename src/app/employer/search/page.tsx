@@ -3,7 +3,7 @@ import { ActionForm, SubmitButton, TaxonomyPicker } from '@/components/forms';
 import { AvailabilityBadge, Badge, Card, Check, EmptyState, Field, LinkButton, PageHeader, Select, btn } from '@/components/ui';
 import { requireRole } from '@/lib/auth';
 import { AVAILABILITY, EMPLOYMENT_TYPES, STAGES, WORK_MODES, daysAgo, lakhs, years } from '@/lib/brand';
-import { getIndustries } from '@/lib/data';
+import { getIndustries, getRegions } from '@/lib/data';
 import { asUser } from '@/lib/db';
 import { getEmployerContext } from '@/lib/employer';
 import { parseFilters, toQuery } from '@/lib/search';
@@ -15,7 +15,7 @@ type SP = Record<string, string | string[] | undefined>;
 export default async function SearchPage({ searchParams }: { searchParams: Promise<SP> }) {
   const user = await requireRole('employer');
   const sp = await searchParams;
-  const [ctx, industries] = await Promise.all([getEmployerContext(user.id), getIndustries()]);
+  const [ctx, industries, regions] = await Promise.all([getEmployerContext(user.id), getIndustries(), getRegions()]);
   const filters = parseFilters(sp);
   const page = Math.max(1, Number(sp.page) || 1);
   const f = (k: string) => (filters[k] as string | number | undefined) ?? '';
@@ -48,7 +48,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                 <Field label="Min exp (yrs)"><input name="exp_min" type="number" min={0} max={60} step={0.5} defaultValue={f('exp_min')} className="input" /></Field>
                 <Field label="Max exp (yrs)"><input name="exp_max" type="number" min={0} max={60} step={0.5} defaultValue={f('exp_max')} className="input" /></Field>
               </div>
-              <Field label="Current city"><input name="city" defaultValue={f('city')} className="input" /></Field>
+              <Field label="Region"><Select name="region" defaultValue={f('region')} placeholder="All regions" options={regions.map((r) => ({ value: r.slug, label: r.name }))} /></Field>
+              <Field label="City or locality"><input name="city" defaultValue={f('city')} className="input" /></Field>
               <fieldset><legend className="label">Can join</legend><div className="space-y-1.5">
                 {Object.entries(AVAILABILITY).map(([v, l]) => <Check key={v} name="availability" value={v} defaultChecked={arr('availability').includes(v)} label={l} />)}</div></fieldset>
               <details className="rounded-lg border border-slate-200 p-3" open={['designation', 'previous_employer', 'qualification', 'certification', 'preferred_city', 'state', 'expected_ctc_max', 'relevant_exp_min', 'updated_within_days', 'verification'].some((k) => k in filters) || arr('work_modes').length + arr('employment_types').length > 0}>

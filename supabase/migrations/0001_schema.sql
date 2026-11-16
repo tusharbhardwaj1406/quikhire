@@ -1,4 +1,4 @@
--- ZeroNotice core schema. PostgreSQL 15+ / Supabase.
+-- QuikHire core schema. PostgreSQL 15+ / Supabase.
 -- Money is stored in paise (integer) for payments and in whole currency units for CTC.
 
 create schema if not exists extensions;
@@ -70,7 +70,7 @@ create index specialisations_name_trgm on public.specialisations using gin (name
 -- ───────────────────────── candidates ─────────────────────────
 create table public.candidates (
   user_id uuid primary key references public.profiles (id) on delete cascade,
-  public_code text generated always as ('ZN-' || upper(substr(md5(user_id::text), 1, 7))) stored,
+  public_code text generated always as ('QH-' || upper(substr(md5(user_id::text), 1, 7))) stored,
   current_designation text,
   summary text,
   total_exp_years numeric(4, 1) check (total_exp_years between 0 and 60),

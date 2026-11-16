@@ -1,4 +1,4 @@
-# ZeroNotice — product and technical architecture
+# QuikHire — product and technical architecture
 
 ## 1. Product in one page
 - **Who**: candidates who can join within 30 days; verified employers / agencies; a super admin.
@@ -61,7 +61,7 @@ Recomputed by triggers whenever anything relevant changes:
 | Data | Default | Released when |
 |---|---|---|
 | Designation, experience, industry, skills, city, availability | visible to verified+subscribed employers | — |
-| Full name, LinkedIn/portfolio | hidden (shown as `Candidate ZN-XXXXXXX`) | candidate setting, or candidate accepts that employer's enquiry |
+| Full name, LinkedIn/portfolio | hidden (shown as `Candidate QH-XXXXXXX`) | candidate setting, or candidate accepts that employer's enquiry |
 | Email, phone | hidden | candidate setting, or accepted enquiry |
 | Salary | hidden; salary filters cannot match hidden salaries | candidate setting |
 | Resume | not downloadable | candidate setting; every download logged + notified |

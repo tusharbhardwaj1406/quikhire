@@ -59,6 +59,7 @@ export async function signupCandidateAction(_: ActionState, fd: FormData): Promi
   const parsed = z.object({
     full_name: name, email, password, phone, terms,
     city: z.string().trim().min(2, 'Enter your current city.').max(80),
+    region_id: z.string().max(10).optional(),
     industry_id: z.coerce.number().int().positive('Select your industry.'),
     specialisation_ids: z.string().optional(),
     total_exp_years: z.coerce.number().min(0).max(60),
@@ -69,7 +70,7 @@ export async function signupCandidateAction(_: ActionState, fd: FormData): Promi
   if (!parsed.success) return { error: firstError(parsed.error) };
   const d = parsed.data;
   return signUp({ email: d.email, password: d.password }, {
-    role: 'candidate', full_name: d.full_name, phone: d.phone, city: d.city, industry_id: String(d.industry_id),
+    role: 'candidate', full_name: d.full_name, phone: d.phone, city: d.city, region_id: /^\d+$/.test(d.region_id ?? '') ? d.region_id : '', industry_id: String(d.industry_id),
     specialisation_id: d.specialisation_ids ?? '', total_exp_years: String(d.total_exp_years), employment_status: d.employment_status ?? '',
     availability: d.availability, earliest_joining_date: d.earliest_joining_date ?? '',
   });

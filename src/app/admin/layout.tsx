@@ -4,7 +4,7 @@ import { requireRole } from '@/lib/auth';
 
 export const metadata = { title: 'Admin', robots: { index: false, follow: false } };
 const NAV = [
-  { href: '/admin', label: 'Overview' }, { href: '/admin/employers', label: 'Employers' }, { href: '/admin/users', label: 'Users' }, { href: '/admin/taxonomy', label: 'Taxonomy' },
+  { href: '/admin', label: 'Overview' }, { href: '/admin/employers', label: 'Employers' }, { href: '/admin/users', label: 'Users' }, { href: '/admin/taxonomy', label: 'Taxonomy' }, { href: '/admin/walk-ins', label: 'Walk-ins' },
   { href: '/admin/payments', label: 'Payments' }, { href: '/admin/settings', label: 'Pricing & settings' }, { href: '/admin/trust', label: 'Reports & audit' },
 ];
 export default async function AdminLayout({ children }: { children: ReactNode }) {

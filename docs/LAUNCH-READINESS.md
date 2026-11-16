@@ -2,11 +2,15 @@
 
 Research date: 16 Nov 2026. Fees and rules change; re-confirm with each provider before signing. This is not legal, tax or financial advice — use a CA/CS and a lawyer for the decisions marked ⚖.
 
-## 1. ⚠ Brand name conflict (decide before spending on domain, trademark or design)
-A recruitment founder (Vamsi Mootkur, on Topmate) already describes a platform called **“ZeroNotice”** as India's recruitment platform exclusively for candidates who can join in 0–15 days. Same name, same concept, same country.
-- ⚖ Run a trademark search (IP India public search, classes 35 and 42; also 9 and 41) and have a trademark attorney assess passing-off risk.
-- Check `zeronotice.in`, `.com`, `.co.in` at a registrar — availability was **not** verified from the build environment.
-- The name is defined once in `src/lib/brand.ts`; a rename is a small code change today and expensive after launch.
+## 1. ⚠ Brand name: QuikHire (check before spending on domain, trademark or design)
+The product was first called ZeroNotice; that name is already used by another Indian immediate-joiner platform, so it was renamed QuikHire on 16 Nov 2026.
+QuikHire is not clear either. Recruitment products with near-identical names already operate in India:
+- **QuikHiring** — a Noida-based mobile recruitment and video-interview app
+- **QuickHire** — an IT talent platform launched by AI Genie in May 2026
+- **QuikrJobs**, **QwikHire**, **QuickHyre AI** — other hiring platforms with similar-sounding names
+- ⚖ Run a trademark search (IP India public search, classes 35 and 42; also 9 and 41) and have a trademark attorney assess confusion risk before launch.
+- Check `quikhire.in`, `.com`, `.co.in` at a registrar — availability was **not** verified from the build environment.
+- The name is defined once in `src/lib/brand.ts`; another rename is a small code change today and expensive after launch.
 
 ## 2. Payment gateway comparison
 | | Razorpay | Cashfree | PayU |

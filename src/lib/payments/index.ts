@@ -54,7 +54,7 @@ export async function processPaymentEvent(ev: NormalisedEvent): Promise<ProcessR
         const { taxPaise } = gstSplit(ev.payment.amountPaise, Number(sub.gst_rate));
         const [inserted] = await tx`insert into payments (subscription_id, provider, provider_payment_id, amount_paise, tax_paise, status, method, paid_at, invoice_number)
           values (${sub.id}, ${ev.provider}, ${ev.payment.id}, ${ev.payment.amountPaise}, ${taxPaise}, 'captured', ${ev.payment.method ?? null}, now(),
-                  'ZN-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('invoice_number_seq')::text, 6, '0'))
+                  'QH-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('invoice_number_seq')::text, 6, '0'))
           on conflict (provider, provider_payment_id) do nothing returning invoice_number`;
         await tx`update subscriptions set status = 'active', current_period_start = ${ev.periodStart ?? new Date()}, current_period_end = ${ev.periodEnd},
                    access_until = ${ev.periodEnd}::timestamptz + make_interval(days => ${grace}), updated_at = now() where id = ${sub.id}`;

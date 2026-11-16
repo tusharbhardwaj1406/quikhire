@@ -33,6 +33,7 @@ export function asUser<T>(userId: string, fn: (tx: Tx) => Promise<T>): Promise<T
 /** Run queries as an anonymous visitor (public reference data and aggregate stats only). */
 export function asAnon<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
   return db().begin(async (tx) => {
+    await tx`select set_config('request.jwt.claims', '{"role":"anon"}', true)`;   // never inherit claims from a pooled connection
     await tx`set local role anon`;
     return fn(tx);
   }) as Promise<T>;

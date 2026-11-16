@@ -1,7 +1,7 @@
 import { SubmitButton } from '@/components/forms';
 import { Alert, Badge, Card, type Tone } from '@/components/ui';
 import { dateIN, inr } from '@/lib/brand';
-import { getBilling, getPlans } from '@/lib/data';
+import { getBilling, getLaunch, getPlans, getSettings } from '@/lib/data';
 import { paymentProvider } from '@/lib/payments';
 import { chargeAmount } from '@/lib/payments/types';
 import { CheckoutButton } from './checkout-button';
@@ -15,7 +15,8 @@ const STATUS: Record<string, [Tone, string]> = {
 export async function BillingPanel({ audience, target, email, name, blockedReason }: {
   audience: 'candidate' | 'employer'; target: { userId?: string; employerId?: string }; email: string; name: string; blockedReason?: string;
 }) {
-  const [plans, billing] = await Promise.all([getPlans(), getBilling(target)]);
+  const [plans, billing, launch, settings] = await Promise.all([getPlans(), getBilling(target), getLaunch(), getSettings()]);
+  const launchFree = launch.free && (audience === 'candidate' || settings.launch_free_employers === true);
   const plan = plans.find((p) => p.audience === audience);
   const provider = paymentProvider();
   const { sub, payments, live } = billing;
@@ -35,11 +36,13 @@ export async function BillingPanel({ audience, target, email, name, blockedReaso
               <form action="/api/billing/cancel" method="post"><SubmitButton variant="danger" small confirm="Cancel auto-renewal? You keep access until the end of the period you have paid for.">Cancel subscription</SubmitButton></form>
             )}
           </div>
+        ) : launchFree && !blockedReason ? (
+          <div className="mt-5"><Alert tone="good" title="Free during our launch">You do not need to pay anything {launch.endsAt ? <>until <strong>{dateIN(launch.endsAt)}</strong></> : <>for the first {launch.days} days after we launch</>}. We will remind you before the free period ends; nothing is charged unless you choose to subscribe then.</Alert></div>
         ) : blockedReason ? <div className="mt-5"><Alert tone="info">{blockedReason}</Alert></div>
           : provider ? (
             <div className="mt-5">
               <CheckoutButton label={`Subscribe for ${inr(charge)}/month`} email={email} name={name}
-                consentText={`I authorise ZeroNotice to collect ${inr(charge)} every month through an auto-pay mandate (UPI AutoPay or card) until I cancel. My bank will notify me before each debit and I can cancel at any time from this page.`} />
+                consentText={`I authorise QuikHire to collect ${inr(charge)} every month through an auto-pay mandate (UPI AutoPay or card) until I cancel. My bank will notify me before each debit and I can cancel at any time from this page.`} />
             </div>
           ) : (
             <div className="mt-5"><Alert tone="warn" title="Online payments are being set up">Checkout will open here as soon as our payment gateway is connected. Nothing has been charged.</Alert></div>

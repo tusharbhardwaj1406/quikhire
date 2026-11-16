@@ -13,7 +13,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   return (
     <Card className="w-full max-w-md">
       <h1 className="text-2xl font-bold">Welcome back</h1>
-      <p className="mt-1 mb-6 text-sm text-slate-600">Log in to your ZeroNotice account.</p>
+      <p className="mt-1 mb-6 text-sm text-slate-600">Log in to your QuikHire account.</p>
       {sp.error && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">We could not sign you in. Please try again.</p>}
       {!otp ? (
         <ActionForm action={loginAction} submit="Log in">

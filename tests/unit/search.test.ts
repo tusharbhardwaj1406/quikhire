@@ -7,12 +7,12 @@ describe('natural-language search', () => {
     const { filters } = parseNaturalQuery(
       'Find 15 immediately available bridge engineers in Delhi NCR with 8–12 years of experience and Midas Civil expertise.',
       ['MIDAS Civil', 'AASHTO', 'Java']);
-    expect(filters).toMatchObject({ exp_min: 8, exp_max: 12, availability: ['immediate'], city: 'Delhi', skills: ['MIDAS Civil'] });
+    expect(filters).toMatchObject({ exp_min: 8, exp_max: 12, availability: ['immediate'], region: 'delhi-ncr', skills: ['MIDAS Civil'] });
     expect(filters.q).toBe('bridge engineers');
   });
   it('handles open-ended experience and joining windows', () => {
     const { filters } = parseNaturalQuery('remote java developers 5+ years within 15 days bangalore', ['Java']);
-    expect(filters).toMatchObject({ exp_min: 5, work_modes: ['remote'], city: 'Bengaluru', skills: ['Java'],
+    expect(filters).toMatchObject({ exp_min: 5, work_modes: ['remote'], region: 'bengaluru', skills: ['Java'],
       availability: ['immediate', 'within_7_days', 'within_15_days'] });
   });
 });
@@ -20,8 +20,9 @@ describe('natural-language search', () => {
 describe('filter validation', () => {
   it('drops empty and invalid values and strips LIKE wildcards', () => {
     expect(parseFilters({ q: '  ', city: 'Del%hi_', exp_min: '8', availability: 'immediate,nonsense' })).toEqual({});
-    expect(parseFilters({ city: 'Del%hi_', exp_min: '8', availability: 'immediate', skills: 'a, b' }))
-      .toEqual({ city: 'Delhi', exp_min: 8, availability: ['immediate'], skills: ['a', 'b'] });
+    expect(parseFilters({ city: 'Del%hi_', exp_min: '8', availability: 'immediate', skills: 'a, b', region: 'pune' }))
+      .toEqual({ city: 'Delhi', exp_min: 8, availability: ['immediate'], skills: ['a', 'b'], region: 'pune' });
+    expect(parseNaturalQuery('accountants in jaipur').filters).toMatchObject({ city: 'Jaipur' });
   });
 });
 

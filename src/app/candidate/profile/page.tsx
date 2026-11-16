@@ -2,7 +2,7 @@ import { ActionForm, SubmitButton, TagInput, TaxonomyPicker } from '@/components
 import { Card, Check, Field, PageHeader, Select } from '@/components/ui';
 import { requireRole } from '@/lib/auth';
 import { AVAILABILITY, EMPLOYMENT_STATUS, EMPLOYMENT_TYPES, WORK_MODES, dateIN } from '@/lib/brand';
-import { getIndustries } from '@/lib/data';
+import { getIndustries, getRegions } from '@/lib/data';
 import { asUser } from '@/lib/db';
 import { addCertification, addExperience, deleteItem, saveAvailability, saveBasics, saveExpertise, saveSalary } from '../actions';
 
@@ -10,7 +10,7 @@ const d = (v: unknown) => (v ? new Date(v as string).toISOString().slice(0, 10) 
 
 export default async function ProfilePage() {
   const user = await requireRole('candidate');
-  const industries = await getIndustries();
+  const [industries, regions] = await Promise.all([getIndustries(), getRegions()]);
   const { c, p, specs, skills, exps, certs } = await asUser(user.id, async (tx) => ({
     c: (await tx`select * from candidates where user_id = ${user.id}`)[0],
     p: (await tx`select full_name, phone, email from profiles where id = ${user.id}`)[0],
@@ -33,7 +33,8 @@ export default async function ProfilePage() {
                 <Field label="Total experience (yrs)"><input name="total_exp_years" type="number" step={0.5} min={0} max={60} defaultValue={c.total_exp_years ?? ''} className="input" /></Field>
                 <Field label="Relevant (yrs)"><input name="relevant_exp_years" type="number" step={0.5} min={0} max={60} defaultValue={c.relevant_exp_years ?? ''} className="input" /></Field>
               </div>
-              <Field label="Current city"><input name="city" defaultValue={c.city ?? ''} className="input" /></Field>
+              <Field label="Region"><Select name="region_id" defaultValue={c.region_id ?? ''} placeholder="Elsewhere in India" options={regions.map((r) => ({ value: r.id, label: r.name }))} /></Field>
+              <Field label="City or locality"><input name="city" defaultValue={c.city ?? ''} className="input" /></Field>
               <Field label="State"><input name="state" defaultValue={c.state ?? ''} className="input" /></Field>
               <Field label="Preferred work locations" hint="Separate with commas." className="sm:col-span-2"><input name="preferred_locations" defaultValue={(c.preferred_locations ?? []).join(', ')} className="input" placeholder="Delhi NCR, Pune, Remote" /></Field>
               <Field label="Professional summary" hint="A few lines on what you do best (80+ characters)." className="sm:col-span-2"><textarea name="summary" rows={4} defaultValue={c.summary ?? ''} className="input" maxLength={2000} /></Field>

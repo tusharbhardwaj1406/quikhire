@@ -1,11 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import postgres from 'postgres';
 
-const sql = postgres(process.env.DATABASE_URL ?? 'postgres://postgres@127.0.0.1:54322/zeronotice_e2e', { onnotice: () => {} });
+const sql = postgres(process.env.DATABASE_URL ?? 'postgres://postgres@127.0.0.1:54322/quikhire_e2e', { onnotice: () => {} });
 const run = Date.now().toString(36);
 const cand = { email: `asha.${run}@example.test`, password: 'correct-horse-battery', name: 'Asha Verma' };
 const emp = { email: `hr.${run}@acmeinfra.test`, password: 'correct-horse-battery', name: 'Rohit Mehta', company: `Acme Infra ${run}` };
-const admin = { email: `admin.${run}@zeronotice.test`, password: 'correct-horse-battery' };
+const admin = { email: `admin.${run}@quikhire.test`, password: 'correct-horse-battery' };
 const SHOTS = process.env.SHOTS_DIR ?? 'test-results/shots';
 
 async function login(page: Page, u: { email: string; password: string }) {
@@ -25,6 +26,9 @@ test('public site is honest before launch and shows real pricing', async ({ page
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Available immediately?');
   await expect(page.getByText('We are just getting started.')).toBeVisible();          // no invented statistics
+  await expect(page.getByText('Launch offer:')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Choose your city' })).toBeVisible();
+  for (const city of ['Mumbai', 'Pune', 'Delhi NCR', 'Bengaluru', 'Kolkata', 'Chennai', 'Hyderabad']) await expect(page.locator('#cities').getByText(city, { exact: true })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/01-home-desktop.png`, fullPage: true });
   await page.goto('/pricing');
   await expect(page.getByText('₹149', { exact: true })).toBeVisible();
@@ -45,7 +49,8 @@ test('candidate signs up, completes a profile and uploads a resume', async ({ pa
   await page.getByLabel('Mobile number').fill('9811122233');
   await page.getByLabel('Email').fill(cand.email);
   await page.getByLabel('Password').fill(cand.password);
-  await page.getByLabel('Current city').fill('Delhi');
+  await page.getByLabel(/^Region/).selectOption({ label: 'Delhi NCR' });
+  await page.getByLabel('City or locality').fill('Dwarka');
   await page.getByLabel('Total experience (years)').fill('11');
   await page.getByLabel(/^Industry/).selectOption({ label: 'Civil Engineering and Infrastructure' });
   await page.getByLabel(/^Specialisation/).selectOption({ label: 'Bridge Engineering' });
@@ -90,12 +95,13 @@ test('candidate signs up, completes a profile and uploads a resume', async ({ pa
   await expect(page.getByText('does not look like a valid document')).toBeVisible();     // disguised file rejected
 
   await page.goto('/candidate');
-  await expect(page.getByText('Activate your subscription')).toBeVisible();              // complete, but not paid → not listed
+  await expect(page.getByText('You are visible to verified employers')).toBeVisible();   // free launch period: listed without paying
+  await expect(page.getByText('Free launch period')).toBeVisible();
   const [c] = await sql`select listed, onboarding_complete, profile_completeness from candidates c join profiles p on p.id = c.user_id where p.email = ${cand.email}`;
-  expect(c).toMatchObject({ listed: false, onboarding_complete: true });
+  expect(c).toMatchObject({ listed: true, onboarding_complete: true });
   expect(c.profile_completeness).toBeGreaterThanOrEqual(85);
   await page.goto('/candidate/billing');
-  await expect(page.getByText('Online payments are being set up')).toBeVisible();        // no simulated payments
+  await expect(page.getByText('Free during our launch')).toBeVisible();                  // nothing to pay, no simulated payments
   await page.goto('/admin'); await expect(page).toHaveURL(/\/candidate$/);                // role isolation
   await logout(page);
 });
@@ -150,7 +156,16 @@ test('admin verifies the employer and grants pilot access', async ({ page }) => 
   await page.goto('/admin/trust');
   await expect(page.getByText('employer.verified')).toBeVisible();                       // audit trail
   await expect(page.getByText('user.grant_access').first()).toBeVisible();
+  // walk-ins researched from public sources are imported with their source links
+  await page.goto('/admin/walk-ins');
+  await page.getByLabel('Walk-ins JSON').fill(readFileSync('supabase/seed/walkins-2026-11-16.json', 'utf8'));
+  await page.getByRole('button', { name: 'Import' }).click();
+  await expect(page.getByText('Imported 12; 0 duplicate(s) skipped.')).toBeVisible();
+  await page.getByLabel('Walk-ins JSON').fill(readFileSync('supabase/seed/walkins-2026-11-16.json', 'utf8'));
+  await page.getByRole('button', { name: 'Import' }).click();
+  await expect(page.getByText('Imported 0; 12 duplicate(s) skipped.')).toBeVisible();     // re-import is harmless
   await page.goto('/admin/settings');
+  await expect(page.getByText('The launch clock has not started')).toBeVisible();
   await expect(page.getByText('Not connected: set RAZORPAY_KEY_ID')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/05-admin-settings.png`, fullPage: true });
   await logout(page);
@@ -163,11 +178,12 @@ test('employer finds the candidate, sees only consented data, and sends an enqui
   await page.getByLabel('Describe who you are looking for').fill('immediately available bridge engineers in Delhi NCR with 8-12 years of experience and Midas Civil expertise');
   await page.getByRole('button', { name: 'Find', exact: true }).click();
   await page.waitForURL(/exp_min=8/);
-  await expect(page.getByLabel('Min exp (yrs)')).toHaveValue('8');                        // NL query became visible, editable filters
+  await expect(page.getByLabel('Min exp (yrs)')).toHaveValue('8');
+  await expect(page.getByLabel(/^Region/)).toHaveValue('delhi-ncr');                      // “Delhi NCR” became the region, so Dwarka/Gurugram/Noida all match                        // NL query became visible, editable filters
   await expect(page.getByLabel('Skills', { exact: false }).first()).toHaveValue('MIDAS Civil');
   const result = page.locator('li', { hasText: 'Senior Bridge Engineer' }).first();
   await expect(result).toBeVisible();
-  await expect(result.getByText(/Candidate ZN-/)).toBeVisible();                          // name masked by default
+  await expect(result.getByText(/Candidate QH-/)).toBeVisible();                          // name masked by default
   await expect(page.getByText(cand.name)).toHaveCount(0);
   await expect(result.getByText('Not shared')).toBeVisible();                             // salary masked by default
   await expect(result.getByText('Self-declared')).toBeVisible();
@@ -175,7 +191,9 @@ test('employer finds the candidate, sees only consented data, and sends an enqui
 
   await page.goto('/employer/search?exp_min=20');                                         // filters really filter
   await expect(page.getByText('No candidates match these filters yet')).toBeVisible();
-  await page.goto('/employer/search?city=Delhi&availability=immediate');
+  await page.goto('/employer/search?region=pune');
+  await expect(page.getByText('No candidates match these filters yet')).toBeVisible();
+  await page.goto('/employer/search?region=delhi-ncr&availability=immediate');
   await page.locator('li', { hasText: 'Senior Bridge Engineer' }).first().getByRole('link', { name: 'View profile' }).click();
   await expect(page.getByText('Contact details are shared when the candidate accepts your enquiry.')).toBeVisible();
   await expect(page.getByText(cand.email)).toHaveCount(0);
@@ -184,7 +202,28 @@ test('employer finds the candidate, sees only consented data, and sends an enqui
   await page.getByLabel(/^Message/).fill('We are hiring for a metro viaduct package and would like to speak with you this week.');
   await page.getByRole('button', { name: 'Send to candidate' }).click();
   await expect(page.getByText('Enquiry sent. You will be notified')).toBeVisible();
+
+  // a verified employer posts its own walk-in; it is public immediately and badged as verified
+  await page.goto('/employer/walk-ins');
+  await page.getByLabel(/^Region/).selectOption({ label: 'Delhi NCR' });
+  await page.getByLabel('Role / position').fill('Site Engineer – Metro Viaduct');
+  await page.getByLabel('First day').fill(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }));
+  await page.getByLabel('Timing').fill('10:00 am – 4:00 pm');
+  await page.getByLabel('Venue name').fill('Acme Infra Project Office');
+  await page.getByRole('button', { name: 'Publish walk-in' }).click();
+  await expect(page.getByText('Published. It appears on the city page')).toBeVisible();
   await logout(page);
+  await page.goto('/in/delhi-ncr');
+  const posted = page.locator('article', { hasText: 'Site Engineer – Metro Viaduct' });
+  await expect(posted.getByText('Verified employer')).toBeVisible();
+  const imported = page.locator('article', { hasText: 'Info Edge' });
+  await expect(imported.getByText('From the web · not verified')).toBeVisible();
+  await expect(imported.getByRole('link', { name: /Original listing/ })).toHaveAttribute('href', /^https:\/\/thepowerhunt\.in/);
+  await page.goto('/in/chennai');
+  await expect(page.locator('article')).toHaveCount(4);
+  await page.screenshot({ path: `${SHOTS}/09-region-chennai-walkins.png`, fullPage: true });
+  await page.goto('/in/mumbai');
+  await expect(page.getByText('No walk-ins are listed for Mumbai in the next 7 days yet.')).toBeVisible();   // nothing found → say so
 });
 
 test('candidate accepts; only then does the employer see contact details', async ({ page }) => {
@@ -213,7 +252,7 @@ test('candidate accepts; only then does the employer see contact details', async
 test('mobile layout has no horizontal overflow', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 760 }, isMobile: true });
   const page = await ctx.newPage();
-  for (const [path, shot] of [['/', '06-home-mobile'], ['/pricing', '07-pricing-mobile'], ['/signup/candidate', '08-signup-mobile']] as const) {
+  for (const [path, shot] of [['/', '06-home-mobile'], ['/pricing', '07-pricing-mobile'], ['/signup/candidate', '08-signup-mobile'], ['/walk-ins', '10-walkins-mobile'], ['/in/hyderabad', '11-region-mobile']] as const) {
     await page.goto(path);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     await page.screenshot({ path: `${SHOTS}/${shot}.png`, fullPage: true });

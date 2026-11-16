@@ -6,7 +6,7 @@ import { brand } from '@/lib/brand';
 // They are NOT legal advice and must be reviewed by a qualified Indian lawyer before launch.
 const DOCS: Record<string, { title: string; body: [string, string][] }> = {
   terms: { title: 'Terms of Service', body: [
-    ['What ZeroNotice is', 'A subscription directory that connects professionals who are available to join within 30 days with verified employers and recruitment agencies. We are not an employer, a recruitment agent or a party to any employment contract.'],
+    ['What QuikHire is', 'A subscription directory that connects professionals who are available to join within 30 days with verified employers and recruitment agencies. We are not an employer, a recruitment agent or a party to any employment contract.'],
     ['Accounts', 'You must give accurate information and keep your login secure. Candidates state their own availability and must keep it current. Employers must be genuine businesses and pass verification.'],
     ['Acceptable use', 'Employers may use candidate information only to evaluate and contact candidates about genuine job opportunities. Scraping, resale, unrelated marketing, discriminatory conduct, fake job offers and charging candidates for jobs are prohibited and lead to suspension.'],
     ['Subscriptions', 'Plans are billed monthly in INR. Prices and whether GST is included are shown before you pay. See the Refunds & Cancellation policy.'],

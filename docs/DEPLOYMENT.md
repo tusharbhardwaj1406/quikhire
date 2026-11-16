@@ -5,7 +5,7 @@ Nothing below has been executed yet. Each step needs an account that only the ow
 ## 0. Environments
 | | Staging | Production |
 |---|---|---|
-| Supabase project | `zeronotice-staging` | `zeronotice-prod` (region: Mumbai `ap-south-1`) |
+| Supabase project | `quikhire-staging` | `quikhire-prod` (region: Mumbai `ap-south-1`) |
 | Vercel | Preview deployments from `develop` | Production from `main` |
 | Razorpay | Test Mode keys | Live keys (after KYC) |
 | Domain | `staging.<domain>` | `www.<domain>` |

@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { LinkButton } from '@/components/ui';
 import { brand, inr } from '@/lib/brand';
-import { getIndustries, getPlans, getPublicStats, type Industry, type Plan } from '@/lib/data';
+import { getIndustries, getLaunch, getPlans, getPublicStats, getRegions, type Industry, type Plan, type Region } from '@/lib/data';
+import { dateIN } from '@/lib/brand';
 
 export const revalidate = 600;
 
 const FAQ: [string, string][] = [
-  ['Who is ZeroNotice for?', 'Professionals who can start a new role now or within 30 days — whatever the reason — and employers who need to hire without waiting out a notice period.'],
+  ['Who is QuikHire for?', 'Professionals who can start a new role now or within 30 days — whatever the reason — and employers who need to hire without waiting out a notice period.'],
   ['Do I have to say why I am available?', 'No. The reason is optional and is never shown to employers unless you choose to share it. We never label anyone as laid off or terminated.'],
   ['Who can see my details?', 'Only verified employers with an active subscription can search the directory. Your name, email, phone, salary and resume stay hidden until you switch them on, or until you accept an employer’s enquiry.'],
   ['How do you keep availability reliable?', 'Every profile shows when availability was last confirmed and whether it is self-declared or verified. If you do not reconfirm in time, your profile is paused from search until you do. It takes one click.'],
@@ -20,8 +21,9 @@ function price(plans: Plan[], audience: string, fallback: number) {
 }
 
 export default async function Home() {
-  const [stats, industries, plans] = await Promise.all([
-    getPublicStats(), getIndustries().catch(() => [] as Industry[]), getPlans().catch(() => [] as Plan[])]);
+  const [stats, industries, plans, regions, launch] = await Promise.all([
+    getPublicStats(), getIndustries().catch(() => [] as Industry[]), getPlans().catch(() => [] as Plan[]),
+    getRegions().catch(() => [] as Region[]), getLaunch().catch(() => null)]);
   const cand = price(plans, 'candidate', 14900), emp = price(plans, 'employer', 149900);
   // Numbers are shown only when they are real and large enough to be meaningful.
   const showNumbers = stats && stats.listed_candidates >= 100;
@@ -38,7 +40,9 @@ export default async function Home() {
               <LinkButton href="/signup/candidate" variant="accent">I&rsquo;m available — create my profile</LinkButton>
               <LinkButton href="/signup/employer" variant="outline">I&rsquo;m hiring — register my company</LinkButton>
             </div>
-            <p className="mt-4 text-sm text-navy-100/80">Candidates {cand.amount}/month · Employers {emp.amount}/month · Cancel anytime</p>
+            {launch?.free
+              ? <p className="mt-4 inline-block rounded-lg bg-accent-600/20 px-3 py-2 text-sm text-accent-100"><strong>Launch offer:</strong> free for candidates {launch.endsAt ? `until ${dateIN(launch.endsAt)}` : `for the first ${launch.days} days`}. No card needed. Then {cand.amount}/month.</p>
+              : <p className="mt-4 text-sm text-navy-100/80">Candidates {cand.amount}/month · Employers {emp.amount}/month · Cancel anytime</p>}
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
             {showNumbers ? (
@@ -50,7 +54,7 @@ export default async function Home() {
             ) : (
               <div>
                 <p className="font-display text-xl font-bold">We are just getting started.</p>
-                <p className="mt-2 text-sm text-navy-100">ZeroNotice is new, and we would rather tell you that than show invented numbers. Founding members shape the platform — and are first in line when employers start searching.</p>
+                <p className="mt-2 text-sm text-navy-100">QuikHire is new, and we would rather tell you that than show invented numbers. Founding members shape the platform — and are first in line when employers start searching.</p>
                 <ul className="mt-4 space-y-2 text-sm text-navy-100">
                   <li>✓ {industries.length || 30} industries and hundreds of specialisations ready</li>
                   <li>✓ Every employer manually verified</li>
@@ -59,6 +63,23 @@ export default async function Home() {
               </div>
             )}
           </div>
+        </div>
+      </section>
+
+      <section id="cities" className="container-page pt-16">
+        <h2 className="text-center text-3xl font-bold">Choose your city</h2>
+        <p className="mx-auto mt-2 max-w-2xl text-center text-slate-600">We are launching in seven metros. Each has its own talent directory and a list of walk-in interviews for the coming week.</p>
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {regions.map((r) => {
+            const w = stats?.walkins_by_region?.[r.slug] ?? 0;
+            return (
+              <Link key={r.id} href={`/in/${r.slug}`} className="rounded-xl border border-slate-200 bg-white p-5 hover:border-accent-500">
+                <p className="font-display text-lg font-bold text-navy-900">{r.name}</p>
+                <p className="mt-1 text-sm text-slate-600">{w > 0 ? `${w} walk-in${w === 1 ? '' : 's'} this week` : 'Walk-ins and talent directory'}</p>
+              </Link>
+            );
+          })}
+          <Link href="/walk-ins" className="flex items-center justify-center rounded-xl bg-navy-900 p-5 text-center font-semibold text-white hover:bg-navy-800">All walk-ins this week →</Link>
         </div>
       </section>
 

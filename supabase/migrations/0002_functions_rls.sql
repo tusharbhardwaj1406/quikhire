@@ -79,7 +79,7 @@ begin
       c.onboarding_complete and c.visibility = 'visible' and c.availability_status = 'active'
       and c.availability <= (public.setting('max_joining_window') #>> '{}')::availability_window
       and v_status = 'active' and v_role = 'candidate'
-      and (not (public.setting('require_candidate_subscription'))::boolean or public.candidate_has_access(c.user_id))
+      and (not (public.setting('require_candidate_subscription'))::boolean or public.launch_is_free() or public.candidate_has_access(c.user_id))
   where c.user_id = p_user;
 end $$;
 
@@ -149,6 +149,7 @@ begin
     begin  -- optional hints captured on the sign-up form; bad input must never block account creation
       update candidates set
         city = nullif(m ->> 'city', ''),
+        region_id = (select id from regions where id = nullif(m ->> 'region_id', '')::int),
         industry_id = (select id from industries where id = nullif(m ->> 'industry_id', '')::int),
         total_exp_years = nullif(m ->> 'total_exp_years', '')::numeric,
         employment_status = nullif(m ->> 'employment_status', ''),
@@ -233,7 +234,7 @@ begin
     v_stale := v_stale + 1;
   end loop;
   for r in select user_id from candidates c where c.listed and (public.setting('require_candidate_subscription'))::boolean
-            and not public.candidate_has_access(c.user_id) loop
+            and not public.launch_is_free() and not public.candidate_has_access(c.user_id) loop
     perform public.recompute_candidate(r.user_id);
     v_lapsed := v_lapsed + 1;
   end loop;
@@ -310,6 +311,7 @@ begin
     and (p ->> 'exp_min' is null or c.total_exp_years >= (p ->> 'exp_min')::numeric)
     and (p ->> 'exp_max' is null or c.total_exp_years <= (p ->> 'exp_max')::numeric)
     and (p ->> 'relevant_exp_min' is null or c.relevant_exp_years >= (p ->> 'relevant_exp_min')::numeric)
+    and (p ->> 'region' is null or c.region_id = (select rg.id from regions rg where rg.slug = p ->> 'region'))
     and (p ->> 'city' is null or c.city ilike '%' || (p ->> 'city') || '%')
     and (p ->> 'preferred_city' is null or exists (select 1 from unnest(c.preferred_locations) l where l ilike '%' || (p ->> 'preferred_city') || '%'))
     and (p ->> 'state' is null or c.state ilike (p ->> 'state'))

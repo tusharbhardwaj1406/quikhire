@@ -135,9 +135,9 @@ export async function saveSettings(_: ActionState, fd: FormData): Promise<Action
     const d = z.object({
       max_joining_window: z.enum(['immediate', 'within_7_days', 'within_15_days', 'within_30_days']),
       availability_reconfirm_days: z.coerce.number().int().min(7).max(60), subscription_grace_days: z.coerce.number().int().min(0).max(15),
-      enquiries_per_day: z.coerce.number().int().min(1).max(500),
+      enquiries_per_day: z.coerce.number().int().min(1).max(500), launch_free_days: z.coerce.number().int().min(0).max(365),
     }).parse(Object.fromEntries(fd));
-    const values = { ...d, require_candidate_subscription: fd.get('require_candidate_subscription') === 'on' };
+    const values = { ...d, require_candidate_subscription: fd.get('require_candidate_subscription') === 'on', launch_free_employers: fd.get('launch_free_employers') === 'on' };
     const sql = db();
     for (const [k, v] of Object.entries(values)) await sql`insert into platform_settings (key, value) values (${k}, ${sql.json(v as never)}) on conflict (key) do update set value = excluded.value, updated_at = now()`;
     await sql`select refresh_all_listings()`;
@@ -168,4 +168,76 @@ export async function resolveReport(fd: FormData): Promise<void> {
   await db()`update reports set status = ${status} where id = ${id}`;
   await audit(admin.id, `report.${status}`, 'report', String(id));
   revalidatePath('/admin/trust');
+}
+
+// ───────── walk-ins ─────────
+async function regionList() {
+  return (await db()`select id, slug, name, city_aliases from regions`) as unknown as { id: number; slug: string; name: string; city_aliases: string[] }[];
+}
+
+export async function addWalkin(_: ActionState, fd: FormData): Promise<ActionState> {
+  const admin = await requireRole('admin');
+  try {
+    const { walkinSchema, resolveRegion, walkinRow } = await import('@/lib/walkins');
+    const w = walkinSchema.parse(Object.fromEntries(fd));
+    const regionId = resolveRegion(w.region, await regionList());
+    if (!regionId) return { error: 'Choose a region.' };
+    const fromWeb = Boolean(w.source_url);
+    const verified = fd.get('verified') === 'on';
+    const sql = db();
+    const [row] = await sql`insert into walkins ${sql({ ...walkinRow(w, regionId), source_type: fromWeb ? 'web' : 'admin', verified, created_by: admin.id } as never)} returning id`;
+    await audit(admin.id, 'walkin.added', 'walkin', row.id, { company: w.company_name });
+  } catch (e) { return fail(e); }
+  revalidatePath('/admin/walk-ins'); revalidatePath('/walk-ins'); revalidatePath('/in/[slug]', 'page');
+  return { ok: true, message: 'Walk-in published.' };
+}
+
+/** Bulk import: a JSON array of walk-ins gathered from public sources. Each must carry its source link. Duplicates are skipped. */
+export async function importWalkins(_: ActionState, fd: FormData): Promise<ActionState> {
+  const admin = await requireRole('admin');
+  try {
+    const { walkinSchema, resolveRegion, walkinRow } = await import('@/lib/walkins');
+    let items: unknown;
+    try { items = JSON.parse(String(fd.get('json') ?? '')); } catch { return { error: 'That is not valid JSON.' }; }
+    if (!Array.isArray(items) || items.length === 0 || items.length > 500) return { error: 'Paste a JSON array of 1–500 walk-ins.' };
+    const regions = await regionList();
+    const sql = db();
+    let added = 0, skipped = 0; const problems: string[] = [];
+    for (const [i, raw] of items.entries()) {
+      const parsed = walkinSchema.safeParse(raw);
+      if (!parsed.success) { problems.push(`#${i + 1}: ${parsed.error.issues[0]?.message}`); continue; }
+      const w = parsed.data;
+      const regionId = resolveRegion(w.region, regions);
+      if (!regionId) { problems.push(`#${i + 1}: unknown region "${w.region}"`); continue; }
+      if (!w.source_url) { problems.push(`#${i + 1}: source_url is required for imported listings`); continue; }
+      const res = await sql`insert into walkins ${sql({ ...walkinRow(w, regionId), source_type: 'web', verified: false, created_by: admin.id } as never)} on conflict do nothing returning id`;
+      if (res.length) added++; else skipped++;
+    }
+    await audit(admin.id, 'walkin.imported', 'walkin', undefined, { added, skipped, problems: problems.length });
+    revalidatePath('/admin/walk-ins'); revalidatePath('/walk-ins'); revalidatePath('/in/[slug]', 'page');
+    return problems.length && !added ? { error: problems.slice(0, 5).join(' · ') }
+      : { ok: true, message: `Imported ${added}; ${skipped} duplicate(s) skipped${problems.length ? `; ${problems.length} rejected (${problems.slice(0, 3).join(' · ')})` : ''}.` };
+  } catch (e) { return fail(e); }
+}
+
+export async function walkinStatus(fd: FormData): Promise<void> {
+  const admin = await requireRole('admin');
+  const id = z.string().uuid().parse(fd.get('id')), op = String(fd.get('op'));
+  const sql = db();
+  if (op === 'delete') await sql`delete from walkins where id = ${id}`;
+  else if (op === 'verify') await sql`update walkins set verified = true where id = ${id}`;
+  else await sql`update walkins set status = ${op === 'hide' ? 'hidden' : 'published'} where id = ${id}`;
+  await audit(admin.id, `walkin.${op}`, 'walkin', id);
+  revalidatePath('/admin/walk-ins'); revalidatePath('/walk-ins'); revalidatePath('/in/[slug]', 'page');
+}
+
+export async function launchAction(fd: FormData): Promise<void> {
+  const admin = await requireRole('admin');
+  const sql = db();
+  const op = String(fd.get('op'));
+  const value = op === 'start' ? new Date().toISOString() : null;
+  await sql`update platform_settings set value = ${sql.json(value as never)}, updated_at = now() where key = 'launch_started_at'`;
+  await sql`select refresh_all_listings()`;
+  await audit(admin.id, op === 'start' ? 'launch.clock_started' : 'launch.clock_reset', 'settings');
+  revalidatePath('/', 'layout');
 }

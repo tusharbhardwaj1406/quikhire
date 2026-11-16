@@ -3,7 +3,7 @@ import { SubmitButton } from '@/components/forms';
 import { Alert, AvailabilityBadge, Badge, Card, LinkButton, PageHeader, Stat } from '@/components/ui';
 import { requireRole } from '@/lib/auth';
 import { dateIN, daysAgo } from '@/lib/brand';
-import { getBilling, getSettings } from '@/lib/data';
+import { getBilling, getLaunch, getSettings, getWalkins } from '@/lib/data';
 import { asUser } from '@/lib/db';
 import { markRead, reconfirmAvailability } from './actions';
 
@@ -25,8 +25,11 @@ export default async function CandidateDashboard() {
     }),
     getBilling({ userId: user.id }), getSettings(),
   ]);
+  const launch = await getLaunch();
+  const [region] = data.c.region_id ? await asUser(user.id, (tx) => tx`select slug, name from regions where id = ${data.c.region_id}`) : [];
+  const walkins = data.c.region_id ? await getWalkins(data.c.region_id) : [];
   const { c, n, activity } = data;
-  const needsSub = settings.require_candidate_subscription === true;
+  const needsSub = settings.require_candidate_subscription === true && !launch.free;
   const reconfirmDays = Number(settings.availability_reconfirm_days ?? 30);
   const dueIn = c.availability_confirmed_at ? reconfirmDays - Math.floor((Date.now() - new Date(c.availability_confirmed_at).getTime()) / 86400000) : null;
   const checklist: [boolean, string, string][] = [
@@ -67,9 +70,16 @@ export default async function CandidateDashboard() {
           </Card>
           <Card title="Subscription" action={<Link href="/candidate/billing" className="text-sm font-medium text-accent-700 hover:underline">Manage</Link>}>
             {billing.live ? (<><Badge tone="good">Active</Badge><p className="mt-3 text-sm text-slate-600">{billing.sub.cancel_at_period_end || billing.sub.status === 'cancelled' ? 'Ends' : 'Renews'} on <strong>{dateIN(billing.sub.current_period_end ?? billing.sub.access_until)}</strong></p></>)
-              : (<><Badge tone="warn">Not active</Badge><p className="mt-3 text-sm text-slate-600">{needsSub ? 'A subscription is needed to appear in employer search.' : 'Listing is currently free during our launch period.'}</p></>)}
+              : (<><Badge tone={needsSub ? 'warn' : 'good'}>{needsSub ? 'Not active' : 'Free launch period'}</Badge><p className="mt-3 text-sm text-slate-600">{needsSub ? 'A subscription is needed to appear in employer search.' : launch.endsAt ? `Listing is free until ${dateIN(launch.endsAt)}.` : `Listing is free for the first ${launch.days} days after launch.`}</p></>)}
           </Card>
         </div>
+        {region && (
+          <Card title={`Walk-ins in ${region.name} this week`} action={<Link href={`/in/${region.slug}#walk-ins`} className="text-sm font-medium text-accent-700 hover:underline">See all</Link>}>
+            {walkins.length === 0 ? <p className="text-sm text-slate-500">None listed for the next 7 days yet.</p> : (
+              <ul className="divide-y divide-slate-100 text-sm">{walkins.slice(0, 4).map((w) => (
+                <li key={w.id} className="flex flex-wrap justify-between gap-2 py-2"><span><span className="font-medium text-navy-900">{w.role_title}</span> · {w.company_name}</span><span className="text-slate-500">{dateIN(w.start_date)}{w.time_text ? `, ${w.time_text}` : ''}</span></li>))}</ul>)}
+          </Card>
+        )}
         <div className="grid gap-6 lg:grid-cols-2">
           <Card title="Go-live checklist">
             <ul className="space-y-2.5 text-sm">

@@ -5,7 +5,7 @@ import { paymentProvider, processPaymentEvent } from '@/lib/payments';
 
 export const dynamic = 'force-dynamic';
 
-/** Razorpay → ZeroNotice. The signature is checked against the exact raw body before anything is parsed or stored. */
+/** Razorpay → QuikHire. The signature is checked against the exact raw body before anything is parsed or stored. */
 export async function POST(request: NextRequest) {
   const provider = paymentProvider();
   if (!provider) return NextResponse.json({ error: 'payments not configured' }, { status: 503 });

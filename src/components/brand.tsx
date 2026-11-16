@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { brand } from '@/lib/brand';
 import { LinkButton, cx } from './ui';
 
-/** Mark: a "zero" ring with a forward tick — ready now, moving forward. */
+/** Mark: a ring with a forward tick: ready now, hired quickly. */
 export function Logo({ light, className }: { light?: boolean; className?: string }) {
   return (
     <span className={cx('inline-flex items-center gap-2 font-display text-lg font-extrabold tracking-tight', className)}>
@@ -12,7 +12,7 @@ export function Logo({ light, className }: { light?: boolean; className?: string
         <circle cx="16" cy="16" r="8" fill="none" stroke="#14b8a6" strokeWidth="3.2" />
         <path d="M13 16.2l2.2 2.2 4-4.6" fill="none" stroke={light ? '#0b1f3a' : '#ffffff'} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span className={light ? 'text-white' : 'text-navy-900'}>Zero<span className="text-accent-500">Notice</span></span>
+      <span className={light ? 'text-white' : 'text-navy-900'}>Quik<span className="text-accent-500">Hire</span></span>
     </span>
   );
 }
@@ -24,6 +24,8 @@ export function SiteHeader({ signedInHref }: { signedInHref?: string | null }) {
         <Link href="/" aria-label={`${brand.name} home`}><Logo /></Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-slate-700 md:flex" aria-label="Main">
           <Link href="/#how-it-works" className="hover:text-navy-900">How it works</Link>
+          <Link href="/#cities" className="hover:text-navy-900">Cities</Link>
+          <Link href="/walk-ins" className="hover:text-navy-900">Walk-ins</Link>
           <Link href="/#industries" className="hover:text-navy-900">Industries</Link>
           <Link href="/pricing" className="hover:text-navy-900">Pricing</Link>
           <Link href="/#faq" className="hover:text-navy-900">FAQ</Link>
@@ -52,7 +54,7 @@ export function SiteFooter() {
     <footer className="mt-20 bg-navy-950">
       <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div><Logo light /><p className="mt-3 max-w-xs text-sm text-navy-100/70">{brand.tagline} {brand.description}</p></div>
-        {col('Candidates', [['Create your profile', '/signup/candidate'], ['Pricing', '/pricing'], ['Log in', '/login']])}
+        {col('Candidates', [['Create your profile', '/signup/candidate'], ['Walk-ins this week', '/walk-ins'], ['Pricing', '/pricing'], ['Log in', '/login']])}
         {col('Employers', [['Register your company', '/signup/employer'], ['Pricing', '/pricing'], ['Employer verification', '/legal/employer-verification']])}
         {col('Legal', [['Terms of Service', '/legal/terms'], ['Privacy Policy', '/legal/privacy'], ['Refunds & cancellation', '/legal/refunds'], ['Grievance redressal', '/legal/grievance']])}
       </div>

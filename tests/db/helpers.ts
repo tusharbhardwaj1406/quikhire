@@ -57,3 +57,7 @@ export async function listedCandidate(over: Record<string, unknown> = {}) {
 export const isListed = async (id: string) => (await db()`select listed from candidates where user_id = ${id}`)[0].listed as boolean;
 export const search = (userId: string, filters: Record<string, unknown> = {}) =>
   asUser(userId, (tx) => tx`select * from search_candidates(${tx.json(filters as never)}, 50, 0)`);
+
+/** Most suites test the paid rules, so the 60-day free launch period is put in the past. */
+export const endLaunch = () => db()`update platform_settings set value = to_jsonb((now() - interval '100 days')::text) where key = 'launch_started_at'`;
+export const resetLaunch = () => db()`update platform_settings set value = 'null' where key = 'launch_started_at'`;

@@ -13,6 +13,7 @@ export const filterSchema = z.object({
   specialisation_ids: list(), specialisations_mode: z.enum(['any', 'all']).optional(),
   skills: list(), skills_mode: z.enum(['any', 'all']).optional(),
   exp_min: num, exp_max: num, relevant_exp_min: num,
+  region: z.preprocess((v) => (typeof v === 'string' && /^[a-z-]{2,30}$/.test(v) ? v : undefined), z.string().optional()),
   city: text, preferred_city: text, state: text, country: text,
   designation: text, previous_employer: text, qualification: text, certification: text,
   expected_ctc_min: num, expected_ctc_max: num, last_ctc_max: num,
@@ -35,12 +36,16 @@ export function parseFilters(input: Record<string, string | string[] | undefined
   return parsed.success ? compact(parsed.data) : {};
 }
 
-const CITY_ALIASES: Record<string, string> = {
-  'delhi ncr': 'Delhi', ncr: 'Delhi', 'new delhi': 'Delhi', delhi: 'Delhi', gurgaon: 'Gurugram', gurugram: 'Gurugram', noida: 'Noida',
-  bangalore: 'Bengaluru', bengaluru: 'Bengaluru', mumbai: 'Mumbai', bombay: 'Mumbai', pune: 'Pune', hyderabad: 'Hyderabad',
-  chennai: 'Chennai', kolkata: 'Kolkata', ahmedabad: 'Ahmedabad', jaipur: 'Jaipur', lucknow: 'Lucknow', kochi: 'Kochi',
-  chandigarh: 'Chandigarh', indore: 'Indore', coimbatore: 'Coimbatore', nagpur: 'Nagpur', bhubaneswar: 'Bhubaneswar',
+/** City names a recruiter might type → launch region slug. Other cities fall back to a plain city filter. */
+const REGION_ALIASES: Record<string, [string, string]> = {
+  'delhi ncr': ['delhi-ncr', 'Delhi NCR'], ncr: ['delhi-ncr', 'Delhi NCR'], 'new delhi': ['delhi-ncr', 'Delhi NCR'], delhi: ['delhi-ncr', 'Delhi NCR'],
+  gurgaon: ['delhi-ncr', 'Delhi NCR'], gurugram: ['delhi-ncr', 'Delhi NCR'], noida: ['delhi-ncr', 'Delhi NCR'], ghaziabad: ['delhi-ncr', 'Delhi NCR'], faridabad: ['delhi-ncr', 'Delhi NCR'],
+  bangalore: ['bengaluru', 'Bengaluru'], bengaluru: ['bengaluru', 'Bengaluru'], 'navi mumbai': ['mumbai', 'Mumbai'], thane: ['mumbai', 'Mumbai'], mumbai: ['mumbai', 'Mumbai'], bombay: ['mumbai', 'Mumbai'],
+  pune: ['pune', 'Pune'], hyderabad: ['hyderabad', 'Hyderabad'], secunderabad: ['hyderabad', 'Hyderabad'], chennai: ['chennai', 'Chennai'], madras: ['chennai', 'Chennai'],
+  kolkata: ['kolkata', 'Kolkata'], calcutta: ['kolkata', 'Kolkata'],
 };
+const CITY_ALIASES: Record<string, string> = { ahmedabad: 'Ahmedabad', jaipur: 'Jaipur', lucknow: 'Lucknow', kochi: 'Kochi', chandigarh: 'Chandigarh',
+  indore: 'Indore', coimbatore: 'Coimbatore', nagpur: 'Nagpur', bhubaneswar: 'Bhubaneswar' };
 
 /**
  * Rule-based natural-language query → structured filters (no AI service required, fully explainable).
@@ -67,7 +72,11 @@ export function parseNaturalQuery(input: string, knownSkills: string[] = []): { 
   for (const mode of ['remote', 'hybrid']) if (take(new RegExp(`\\b${mode}\\b`))) { filters.work_modes = [mode]; explanation.push(`Work mode: ${mode}`); }
   if (take(/\bon-?site\b/)) { filters.work_modes = ['onsite']; explanation.push('Work mode: on-site'); }
 
-  for (const alias of Object.keys(CITY_ALIASES).sort((a, b) => b.length - a.length)) {
+  let placed = false;
+  for (const alias of Object.keys(REGION_ALIASES).sort((a, b) => b.length - a.length)) {
+    if (take(new RegExp(`\\b(?:in|at|from|near|based in)?\\s*${alias}\\b`))) { filters.region = REGION_ALIASES[alias][0]; explanation.push(`Region: ${REGION_ALIASES[alias][1]}`); placed = true; break; }
+  }
+  if (!placed) for (const alias of Object.keys(CITY_ALIASES)) {
     if (take(new RegExp(`\\b(?:in|at|from|near|based in)?\\s*${alias}\\b`))) { filters.city = CITY_ALIASES[alias]; explanation.push(`Location: ${CITY_ALIASES[alias]}`); break; }
   }
   const skills: string[] = [];
